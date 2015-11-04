@@ -2,6 +2,8 @@ package org.usfirst.ftc.exampleteam.yourcodehere;
 
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.robocol.Telemetry;
+import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
 import com.qualcomm.robotcore.hardware.DeviceInterfaceModule;
 
@@ -54,7 +56,7 @@ public class Test extends SynchronousOpMode {
                     MAX_POWER              = 1.0d;
 
     // all of the constant motor powers
-    final double    PICKUP_POWER    = 1.0d,
+    final double    PICKUP_POWER    = 0.8d,
                     LIFT_POWER      = 1.0d;
 
     // all of the starting servo positions
@@ -70,6 +72,20 @@ public class Test extends SynchronousOpMode {
                     S_PICKUP_START_POS_SL  = Servo.MIN_POSITION,
                     S_HITCH_START_POS_R    = Servo.MIN_POSITION,
                     S_HITCH_START_POS_L    = Servo.MIN_POSITION;
+
+    // all of the ending servo positions
+    final double    S_CLIMBERS_END_POS_R = Servo.MAX_POSITION,
+                    S_CLIMBERS_END_POS_L = Servo.MAX_POSITION,
+                    S_LIFT_END_POS_R     = Servo.MAX_POSITION,
+                    S_LIFT_END_POS_L     = Servo.MAX_POSITION,
+                    S_BASKET_END_POS_R   = Servo.MAX_POSITION,
+                    S_BASKET_END_POS_L   = Servo.MAX_POSITION,
+                    S_PICKUP_END_POS_FR  = Servo.MAX_POSITION,
+                    S_PICKUP_END_POS_FL  = Servo.MAX_POSITION,
+                    S_PICKUP_END_POS_SR  = Servo.MAX_POSITION,
+                    S_PICKUP_END_POS_SL  = Servo.MAX_POSITION,
+                    S_HITCH_END_POS_R    = Servo.MAX_POSITION,
+                    S_HITCH_END_POS_L    = Servo.MAX_POSITION;
 
     // motor powers
     double  M_drivePowerR = STOP,
@@ -143,7 +159,7 @@ public class Test extends SynchronousOpMode {
         parameters.angleunit      = IBNO055IMU.ANGLEUNIT.DEGREES;
         parameters.accelunit      = IBNO055IMU.ACCELUNIT.METERS_PERSEC_PERSEC;
         parameters.loggingEnabled = false;
-        this.adaFruit = ClassFactory.createAdaFruitBNO055IMU(hardwareMap.i2cDevice.get("adaFruit"), parameters);
+        //this.adaFruit = ClassFactory.createAdaFruitBNO055IMU(hardwareMap.i2cDevice.get("adaFruit"), parameters);
 
         // defining threads
         R_controllerThread = new ControllerThread();
@@ -158,36 +174,38 @@ public class Test extends SynchronousOpMode {
 
         // Wait for the game to start
         waitForStart();
-
+        T_controllerThread.start();
         // Go go gadget robot!
         while (opModeIsActive()) {
             if (updateGamepads()) {
-                // The game pad state has changed. Do something with that!
 
-                // updates all the motor powers
-                this.M_driveFR.setPower(this.M_drivePowerR);
-                this.M_driveFL.setPower(this.M_drivePowerL);
-                this.M_driveBR.setPower(this.M_drivePowerR);
-                this.M_driveBL.setPower(this.M_drivePowerL);
-                this.M_pickup.setPower(this.M_pickupPower);
-                this.M_lift.setPower(this.M_liftPower);
-                //this.M_hangR.setPower(this.M_hangPowerR);
-                //this.M_hangL.setPower(this.M_hangPowerL);
 
-                // updates all the servo positions
-                //this.S_climbersR.setPosition(this.S_CLIMBERS_START_POS_R);
-                this.S_climbersL.setPosition(this.S_CLIMBERS_START_POS_L);
-                //this.S_liftR.setPosition(this.S_liftPosR);
-                //this.S_liftL.setPosition(this.S_liftPosL);
-                //this.S_basketR.setPosition(this.S_basketPosR);
-                //this.S_basketL.setPosition(this.S_basketPosL);
-                //this.S_pickupFR.setPosition(this.S_pickupPosFR);
-                //this.S_pickupFL.setPosition(this.S_pickupPosFL);
-                //this.S_pickupSR.setPosition(this.S_pickupPosSR);
-                //this.S_pickupSL.setPosition(this.S_pickupPosSL);
-                //this.S_hitchR.setPosition(this.S_hitchPosR);
-                //this.S_hitchL.setPosition(this.S_hitchPosL);
             }
+            // updates all the motor powers
+            this.M_driveFR.setPower(this.M_drivePowerR);
+            this.M_driveFL.setPower(this.M_drivePowerL);
+            this.M_driveBR.setPower(this.M_drivePowerR);
+            this.M_driveBL.setPower(this.M_drivePowerL);
+            this.M_pickup.setPower(this.M_pickupPower);
+            this.M_lift.setPower(this.M_liftPower);
+            //this.M_hangR.setPower(this.M_hangPowerR);
+            //this.M_hangL.setPower(this.M_hangPowerL);
+
+            // The game pad state has changed. Do something with that!
+            // updates all the servo positions
+            //this.S_climbersR.setPosition(this.S_CLIMBERS_START_POS_R);
+            this.S_climbersL.setPosition(this.S_climbersPosL);
+            //this.S_liftR.setPosition(this.S_liftPosR);
+            //this.S_liftL.setPosition(this.S_liftPosL);
+            //this.S_basketR.setPosition(this.S_basketPosR);
+            //this.S_basketL.setPosition(this.S_basketPosL);
+            //this.S_pickupFR.setPosition(this.S_pickupPosFR);
+            //this.S_pickupFL.setPosition(this.S_pickupPosFL);
+            //this.S_pickupSR.setPosition(this.S_pickupPosSR);
+            //this.S_pickupSL.setPosition(this.S_pickupPosSL);
+            //this.S_hitchR.setPosition(this.S_hitchPosR);
+            //this.S_hitchL.setPosition(this.S_hitchPosL);
+
             telemetry.update();
             idle();
         }
@@ -201,9 +219,14 @@ public class Test extends SynchronousOpMode {
         // use a negative value for y axis since controller reads -1 when pushed forward
         private double convertStick(float controllerValue) {   return Range.clip(Math.sin(controllerValue * Math.PI / 2 / C_STICK_TOP_THRESHOLD), -1.0d, 1.0d); }
         // the main loop function
+        double passedTime = 0.0d;
+        ElapsedTime clock = new ElapsedTime();
         public void run() {
             try {
                 while(!Thread.currentThread().isInterrupted()) {
+
+                    passedTime = clock.time() * 1000;
+                    clock.reset();
                      //some experimental stuff for finding joystick angles and such
                     // finds quadrant stick is pointing in
                     /*if(-gamepad1.left_stick_y >= 0.0f) {
@@ -270,6 +293,14 @@ public class Test extends SynchronousOpMode {
                         M_liftPower = STOP;
                     }
 
+                    // left climber block
+                    if(gamepad1.a) {
+                        S_climbersPosL = S_CLIMBERS_END_POS_L;
+                    } else if(gamepad1.b) {
+                        S_climbersPosL = S_CLIMBERS_START_POS_L;
+                    }
+
+                    telemetry.addData("Thread is running", passedTime);
                     Thread.sleep(10);
                 }
             } catch (InterruptedException e) {
