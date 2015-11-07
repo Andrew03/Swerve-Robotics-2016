@@ -1,6 +1,7 @@
 package org.usfirst.ftc.exampleteam.yourcodehere;
 
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorController;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.robocol.Telemetry;
 import com.qualcomm.robotcore.util.ElapsedTime;
@@ -12,6 +13,20 @@ import org.swerverobotics.library.interfaces.IBNO055IMU;
 import org.swerverobotics.library.interfaces.TeleOp;
 import org.swerverobotics.library.internal.AdaFruitBNO055IMU;
 import org.swerverobotics.library.ClassFactory;
+
+// distance is an arc length, r * angle, where r = diagonal of robot / 2 and angle is angle to turn
+// distance also equals ticks * wheel radius / ticks per revolution
+// solve for ticks, gets value below
+// ticks needed = angle * diagonal of robot * ticks per rev / radius of wheel / 2
+
+// get to this kind of function
+/*
+    void turn(double angle) {
+        int val = angle / some constant
+        motorL.runToPosition(val)
+        motorR.runToPosition(-val)
+    }
+ */
 
 /**
  * A skeletal example of a do-nothing first OpMode. Go ahead and change this code
@@ -54,6 +69,7 @@ public class Test extends SynchronousOpMode {
     // all of the important constants
     final double    STOP                   = 0.0d,
                     MAX_POWER              = 1.0d;
+    final int       TICKS_PER_REVOLUTION   = 1120;
 
     // all of the constant motor powers
     final double    PICKUP_POWER    = 0.8d,
@@ -172,15 +188,79 @@ public class Test extends SynchronousOpMode {
         this.M_lift.setDirection(DcMotor.Direction.REVERSE);
         //this.M_hangL.setDirection(DcMotor.Direction.REVERSE);
 
+        // sets all motors to run with encoders
+        //this.M_driveFR.setChannelMode(DcMotorController.RunMode.RUN_USING_ENCODERS);
+        //this.M_driveFL.setChannelMode(DcMotorController.RunMode.RUN_USING_ENCODERS);
+        this.M_driveBR.setChannelMode(DcMotorController.RunMode.RUN_USING_ENCODERS);
+        this.M_driveBL.setChannelMode(DcMotorController.RunMode.RUN_USING_ENCODERS);
+        //this.M_pickup.setChannelMode(DcMotorController.RunMode.RUN_USING_ENCODERS);
+        //this.M_lift.setChannelMode(DcMotorController.RunMode.RUN_USING_ENCODERS);
+        //this.M_hangR.setChannelMode(DcMotorController.RunMode.RUN_USING_ENCODERS);
+        //this.M_hangL.setChannelMode(DcMotorController.RunMode.RUN_USING_ENCODERS);
+
+        // resets all the encoder values
+        //this.M_driveFR.setChannelMode(DcMotorController.RunMode.RESET_ENCODERS);
+        //this.M_driveFL.setChannelMode(DcMotorController.RunMode.RESET_ENCODERS);
+        this.M_driveBR.setChannelMode(DcMotorController.RunMode.RESET_ENCODERS);
+        this.M_driveBL.setChannelMode(DcMotorController.RunMode.RESET_ENCODERS);
+        //this.M_pickup.setChannelMode(DcMotorController.RunMode.RESET_ENCODERS);
+        //this.M_lift.setChannelMode(DcMotorController.RunMode.RESET_ENCODERS);
+        //this.M_hangR.setChannelMode(DcMotorController.RunMode.RESET_ENCODERS);
+        //this.M_hangL.setChannelMode(DcMotorController.RunMode.RESET_ENCODERS);
+
+
         // Wait for the game to start
         waitForStart();
-        T_controllerThread.start();
+        //T_controllerThread.start();
         // Go go gadget robot!
         while (opModeIsActive()) {
             if (updateGamepads()) {
 
-
             }
+
+
+            // pickup control block
+            if (gamepad1.right_bumper) {
+                M_pickupPower = PICKUP_POWER;
+            } else if (gamepad1.left_bumper) {
+                M_pickupPower = -PICKUP_POWER;
+            } else {
+                M_pickupPower = STOP;
+            }
+
+            // lift control block
+            if(gamepad1.right_trigger > 0.0f) {
+                M_liftPower = LIFT_POWER;
+            } else if(gamepad1.left_trigger > 0.0f) {
+                M_liftPower = -LIFT_POWER;
+            } else {
+                M_liftPower = STOP;
+            }
+
+            // left climber block
+            if(gamepad1.a) {
+                S_climbersPosL = S_CLIMBERS_END_POS_L;
+            } else if(gamepad1.b) {
+                S_climbersPosL = S_CLIMBERS_START_POS_L;
+            }
+
+            if(gamepad1.y) {
+                M_driveFR.setChannelMode(DcMotorController.RunMode.RESET_ENCODERS);
+                M_driveFL.setChannelMode(DcMotorController.RunMode.RESET_ENCODERS);
+            }
+            if(gamepad1.x) {
+                M_drivePowerR = 0.8f;
+                M_drivePowerL = -0.8f;
+            } else {
+                M_drivePowerR = STOP;
+                M_drivePowerL = STOP;
+            }
+
+            telemetry.addData("R motor power", M_drivePowerR);
+            telemetry.addData("L motor power", M_drivePowerL);
+            telemetry.addData("R Motor Pos", M_driveBR.  getCurrentPosition());
+            telemetry.addData("L Motor Pos", M_driveBL.getCurrentPosition());
+
             // updates all the motor powers
             this.M_driveFR.setPower(this.M_drivePowerR);
             this.M_driveFL.setPower(this.M_drivePowerL);
@@ -193,7 +273,7 @@ public class Test extends SynchronousOpMode {
 
             // The game pad state has changed. Do something with that!
             // updates all the servo positions
-            //this.S_climbersR.setPosition(this.S_CLIMBERS_START_POS_R);
+            //this.S_climbersR.setPosition(this.S_climbersPosR);
             this.S_climbersL.setPosition(this.S_climbersPosL);
             //this.S_liftR.setPosition(this.S_liftPosR);
             //this.S_liftL.setPosition(this.S_liftPosL);
@@ -209,7 +289,7 @@ public class Test extends SynchronousOpMode {
             telemetry.update();
             idle();
         }
-        T_controllerThread.interrupt();
+        //T_controllerThread.interrupt();
     }
     private class ControllerThread implements Runnable {
         private final float C_STICK_TOP_THRESHOLD = 0.85f;      // least value for which stick value read from motor will be 1.0f
@@ -272,8 +352,8 @@ public class Test extends SynchronousOpMode {
                     */
 
                     // motor control block
-                    M_drivePowerR = convertStick(-gamepad1.right_stick_y);
-                    M_drivePowerL = convertStick(-gamepad1.left_stick_y);
+                    //M_drivePowerR = convertStick(-gamepad1.right_stick_y);
+                    //M_drivePowerL = convertStick(-gamepad1.left_stick_y);
 
                     // pickup control block
                     if (gamepad1.right_bumper) {
@@ -300,7 +380,23 @@ public class Test extends SynchronousOpMode {
                         S_climbersPosL = S_CLIMBERS_START_POS_L;
                     }
 
+                    if(gamepad1.y) {
+                        M_driveFR.setChannelMode(DcMotorController.RunMode.RESET_ENCODERS);
+                        M_driveFL.setChannelMode(DcMotorController.RunMode.RESET_ENCODERS);
+                    }
+                    if(gamepad1.x) {
+                        M_drivePowerR = 0.8f;
+                        M_drivePowerL = -0.8f;
+                    } else {
+                        M_drivePowerR = STOP;
+                        M_drivePowerL = STOP;
+                    }
+
                     telemetry.addData("Thread is running", passedTime);
+                    telemetry.addData("R motor power", M_drivePowerR);
+                    telemetry.addData("L motor power", M_drivePowerL);
+                    telemetry.addData("R Motor Pos", M_driveBR.  getCurrentPosition());
+                    telemetry.addData("L Motor Pos", M_driveBL.getCurrentPosition());
                     Thread.sleep(10);
                 }
             } catch (InterruptedException e) {
@@ -309,6 +405,7 @@ public class Test extends SynchronousOpMode {
             }
         }
     }
+
     private class TurnPIDThread implements Runnable {
         final double angleThreshold = 0.5d;
         float   kP = 0.0f,
@@ -322,6 +419,7 @@ public class Test extends SynchronousOpMode {
         float   PIDValue = 0.0f,
                 power = 0.0f;
         double prevTarget = 0.0d;
+
         @Override
         public void run() {
             try {
