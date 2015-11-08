@@ -127,10 +127,6 @@ public class Test extends SynchronousOpMode {
 
     double angleTarget, currAngle;
 
-    // thread stuff
-    ControllerThread R_controllerThread;
-    Thread T_controllerThread;
-
     enum Quadrant {
         Q1,
         Q2,
@@ -138,6 +134,8 @@ public class Test extends SynchronousOpMode {
         Q4
     } Quadrant quadrant;
 
+    private final float C_STICK_TOP_THRESHOLD = 0.85f;
+    private double convertStick(float controllerValue) {   return Range.clip(Math.sin(controllerValue * Math.PI / 2 / C_STICK_TOP_THRESHOLD), -1.0d, 1.0d); }
 
     @Override public void main() throws InterruptedException {
         /* Initialize our hardware variables. Note that the strings used here as parameters
@@ -175,11 +173,7 @@ public class Test extends SynchronousOpMode {
         parameters.angleunit      = IBNO055IMU.ANGLEUNIT.DEGREES;
         parameters.accelunit      = IBNO055IMU.ACCELUNIT.METERS_PERSEC_PERSEC;
         parameters.loggingEnabled = false;
-        //this.adaFruit = ClassFactory.createAdaFruitBNO055IMU(hardwareMap.i2cDevice.get("adaFruit"), parameters);
-
-        // defining threads
-        R_controllerThread = new ControllerThread();
-        T_controllerThread = new Thread(R_controllerThread, "Controller Tread");
+        //this.adaFruit = ClassFactory.createAdaFruitBNO055IMU(hardwareMap.i2cDevice.get("adaFruit"), parameters)
 
         // fixing motor directions
         this.M_driveFR.setDirection(DcMotor.Direction.REVERSE);
@@ -208,6 +202,8 @@ public class Test extends SynchronousOpMode {
         //this.M_hangR.setChannelMode(DcMotorController.RunMode.RESET_ENCODERS);
         //this.M_hangL.setChannelMode(DcMotorController.RunMode.RESET_ENCODERS);
 
+        this.M_driveBR.setChannelMode(DcMotorController.RunMode.RUN_TO_POSITION);
+        this.M_driveBL.setChannelMode(DcMotorController.RunMode.RUN_TO_POSITION);
 
         // Wait for the game to start
         waitForStart();
@@ -215,63 +211,79 @@ public class Test extends SynchronousOpMode {
         // Go go gadget robot!
         while (opModeIsActive()) {
             if (updateGamepads()) {
+                M_drivePowerR = convertStick(-gamepad1.right_stick_y);
+                M_drivePowerL = convertStick(-gamepad1.left_stick_y);
 
+                if (gamepad1.right_bumper) {
+                    M_pickupPower = PICKUP_POWER;
+                } else if (gamepad1.left_bumper) {
+                    M_pickupPower = -PICKUP_POWER;
+                } else {
+                    M_pickupPower = STOP;
+                }
+
+                // lift control block
+                if(gamepad1.right_trigger > 0.0f) {
+                    M_liftPower = LIFT_POWER;
+                } else if(gamepad1.left_trigger > 0.0f) {
+                    M_liftPower = -LIFT_POWER;
+                } else {
+                    M_liftPower = STOP;
+                }
+
+                // left climber block
+                if(gamepad1.a) {
+                    S_climbersPosL = S_CLIMBERS_END_POS_L;
+                } else if(gamepad1.b) {
+                    S_climbersPosL = S_CLIMBERS_START_POS_L;
+                }
+                /*if(gamepad1.x) {
+                    M_drivePowerR = 0.35f;
+                    M_drivePowerL = -0.35f;
+                } else {
+                    M_drivePowerR = 0.0f;
+                    M_drivePowerL = 0.0f;
+                }*/
+                if(gamepad1.dpad_up) {
+                    this.M_driveBR.setChannelMode(DcMotorController.RunMode.RESET_ENCODERS);
+                    this.M_driveBL.setChannelMode(DcMotorController.RunMode.RESET_ENCODERS);
+                }
+                if(gamepad1.dpad_right) {
+                    this.M_driveBR.setChannelMode(DcMotorController.RunMode.RUN_TO_POSITION);
+                    this.M_driveBL.setChannelMode(DcMotorController.RunMode.RUN_TO_POSITION);
+                }
+                if(gamepad1.dpad_down) {
+                    this.M_driveBL.setTargetPosition(-2400);
+                    this.M_driveBR.setTargetPosition(-2400);
+                }
+                if(gamepad1.dpad_left) {
+                    this.M_driveBL.setTargetPosition(2400);
+                    this.M_driveBR.setTargetPosition(2400);
+                }
             }
 
+            this.M_driveBL.setTargetPosition(2400);
+            this.M_driveBR.setTargetPosition(2400);
 
-            // pickup control block
-            if (gamepad1.right_bumper) {
-                M_pickupPower = PICKUP_POWER;
-            } else if (gamepad1.left_bumper) {
-                M_pickupPower = -PICKUP_POWER;
-            } else {
-                M_pickupPower = STOP;
+            if(this.M_driveBL.getCurrentPosition() > this.M_driveBL.getTargetPosition()) {
+                this.M_drivePowerL = STOP;
+            }
+            if(this.M_driveBR.getCurrentPosition() > this.M_driveBR.getTargetPosition()) {
+                this.M_drivePowerR = STOP;
             }
 
-            // lift control block
-            if(gamepad1.right_trigger > 0.0f) {
-                M_liftPower = LIFT_POWER;
-            } else if(gamepad1.left_trigger > 0.0f) {
-                M_liftPower = -LIFT_POWER;
-            } else {
-                M_liftPower = STOP;
-            }
-
-            // left climber block
-            if(gamepad1.a) {
-                S_climbersPosL = S_CLIMBERS_END_POS_L;
-            } else if(gamepad1.b) {
-                S_climbersPosL = S_CLIMBERS_START_POS_L;
-            }
-
-            if(gamepad1.y) {
-                M_driveFR.setChannelMode(DcMotorController.RunMode.RESET_ENCODERS);
-                M_driveFL.setChannelMode(DcMotorController.RunMode.RESET_ENCODERS);
-            }
-            if(gamepad1.x) {
-                M_drivePowerR = 0.8f;
-                M_drivePowerL = -0.8f;
-            } else {
-                M_drivePowerR = STOP;
-                M_drivePowerL = STOP;
-            }
-
-            telemetry.addData("R motor power", M_drivePowerR);
-            telemetry.addData("L motor power", M_drivePowerL);
-            telemetry.addData("R Motor Pos", M_driveBR.  getCurrentPosition());
-            telemetry.addData("L Motor Pos", M_driveBL.getCurrentPosition());
+            //this.M_driveBL.setPower(0.5f);
 
             // updates all the motor powers
-            this.M_driveFR.setPower(this.M_drivePowerR);
-            this.M_driveFL.setPower(this.M_drivePowerL);
             this.M_driveBR.setPower(this.M_drivePowerR);
             this.M_driveBL.setPower(this.M_drivePowerL);
+            this.M_driveFR.setPower(this.M_drivePowerR);
+            this.M_driveFL.setPower(this.M_drivePowerL);
             this.M_pickup.setPower(this.M_pickupPower);
             this.M_lift.setPower(this.M_liftPower);
             //this.M_hangR.setPower(this.M_hangPowerR);
             //this.M_hangL.setPower(this.M_hangPowerL);
 
-            // The game pad state has changed. Do something with that!
             // updates all the servo positions
             //this.S_climbersR.setPosition(this.S_climbersPosR);
             this.S_climbersL.setPosition(this.S_climbersPosL);
@@ -286,124 +298,17 @@ public class Test extends SynchronousOpMode {
             //this.S_hitchR.setPosition(this.S_hitchPosR);
             //this.S_hitchL.setPosition(this.S_hitchPosL);
 
+            //int currPos = M_driveBL.getCurrentPosition();
+
+            telemetry.addData("R Motor Pos", M_driveBR.getCurrentPosition());
+            telemetry.addData("L Motor Pos", M_driveBL.getCurrentPosition());
+            telemetry.addData("R Motor Power", M_drivePowerR);
+            telemetry.addData("L Motor Power", M_drivePowerL);
+
             telemetry.update();
             idle();
         }
         //T_controllerThread.interrupt();
-    }
-    private class ControllerThread implements Runnable {
-        private final float C_STICK_TOP_THRESHOLD = 0.85f;      // least value for which stick value read from motor will be 1.0f
-        private double joystickAngle, joyStickMagnitude;
-
-        // converts all of the controller sticks into more sensitive values
-        // use a negative value for y axis since controller reads -1 when pushed forward
-        private double convertStick(float controllerValue) {   return Range.clip(Math.sin(controllerValue * Math.PI / 2 / C_STICK_TOP_THRESHOLD), -1.0d, 1.0d); }
-        // the main loop function
-        double passedTime = 0.0d;
-        ElapsedTime clock = new ElapsedTime();
-        public void run() {
-            try {
-                while(!Thread.currentThread().isInterrupted()) {
-
-                    passedTime = clock.time() * 1000;
-                    clock.reset();
-                     //some experimental stuff for finding joystick angles and such
-                    // finds quadrant stick is pointing in
-                    /*if(-gamepad1.left_stick_y >= 0.0f) {
-                        if(gamepad1.left_stick_x >= 0.0f) {
-                            quadrant = Quadrant.Q1;
-                        } else {
-                            quadrant = Quadrant.Q2;
-                        }
-                    } else {
-                        if(gamepad1.left_stick_x > 0.0f) {
-                            quadrant = Quadrant.Q4;
-                        } else {
-                            quadrant = Quadrant.Q3;
-                        }
-                    }
-
-                    // finds angle of stick
-                    switch(quadrant) {
-                        case Q1:
-                            joystickAngle = Math.toDegrees(Math.atan(-gamepad1.left_stick_y / gamepad1.left_stick_x));
-                            joyStickMagnitude = Math.sqrt(Math.pow(gamepad1.left_stick_y, 2) + Math.pow(gamepad1.left_stick_x, 2));
-                            break;
-                        case Q2:
-                            joystickAngle = 180.0d + Math.toDegrees(Math.atan(-gamepad1.left_stick_y / gamepad1.left_stick_x));
-                            joyStickMagnitude = Math.sqrt(Math.pow(gamepad1.left_stick_y, 2) + Math.pow(gamepad1.left_stick_x, 2));
-                            break;
-                        case Q3:
-                            joystickAngle = 180.0d + Math.toDegrees(Math.atan(-gamepad1.left_stick_y / gamepad1.left_stick_x));
-                            joyStickMagnitude = -Math.sqrt(Math.pow(gamepad1.left_stick_y, 2) + Math.pow(gamepad1.left_stick_x, 2));
-                            break;
-                        case Q4:
-                            joystickAngle = 360.0d + Math.toDegrees(Math.atan(-gamepad1.left_stick_y / gamepad1.left_stick_x));
-                            joyStickMagnitude = -Math.sqrt(Math.pow(gamepad1.left_stick_y, 2) + Math.pow(gamepad1.left_stick_x, 2));
-                    }
-                    joyStickMagnitude = Math.sqrt(Math.pow(gamepad1.left_stick_y, 2) + Math.pow(gamepad1.left_stick_x, 2));
-                    if(Math.abs(joystickAngle - adaAngle) > angleThreshold) {
-                        do a pid thing for turning
-                        angleTarget = joystickAngle;
-                    else {
-                        M_drivePowerR = convertStick(joyStickMagnitude);
-                        M_drivePowerL = convertStick(joyStickMagnitude);
-                    }
-                    */
-
-                    // motor control block
-                    //M_drivePowerR = convertStick(-gamepad1.right_stick_y);
-                    //M_drivePowerL = convertStick(-gamepad1.left_stick_y);
-
-                    // pickup control block
-                    if (gamepad1.right_bumper) {
-                        M_pickupPower = PICKUP_POWER;
-                    } else if (gamepad1.left_bumper) {
-                        M_pickupPower = -PICKUP_POWER;
-                    } else {
-                        M_pickupPower = STOP;
-                    }
-
-                    // lift control block
-                    if(gamepad1.right_trigger > 0.0f) {
-                        M_liftPower = LIFT_POWER;
-                    } else if(gamepad1.left_trigger > 0.0f) {
-                        M_liftPower = -LIFT_POWER;
-                    } else {
-                        M_liftPower = STOP;
-                    }
-
-                    // left climber block
-                    if(gamepad1.a) {
-                        S_climbersPosL = S_CLIMBERS_END_POS_L;
-                    } else if(gamepad1.b) {
-                        S_climbersPosL = S_CLIMBERS_START_POS_L;
-                    }
-
-                    if(gamepad1.y) {
-                        M_driveFR.setChannelMode(DcMotorController.RunMode.RESET_ENCODERS);
-                        M_driveFL.setChannelMode(DcMotorController.RunMode.RESET_ENCODERS);
-                    }
-                    if(gamepad1.x) {
-                        M_drivePowerR = 0.8f;
-                        M_drivePowerL = -0.8f;
-                    } else {
-                        M_drivePowerR = STOP;
-                        M_drivePowerL = STOP;
-                    }
-
-                    telemetry.addData("Thread is running", passedTime);
-                    telemetry.addData("R motor power", M_drivePowerR);
-                    telemetry.addData("L motor power", M_drivePowerL);
-                    telemetry.addData("R Motor Pos", M_driveBR.  getCurrentPosition());
-                    telemetry.addData("L Motor Pos", M_driveBL.getCurrentPosition());
-                    Thread.sleep(10);
-                }
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                return;
-            }
-        }
     }
 
     private class TurnPIDThread implements Runnable {
