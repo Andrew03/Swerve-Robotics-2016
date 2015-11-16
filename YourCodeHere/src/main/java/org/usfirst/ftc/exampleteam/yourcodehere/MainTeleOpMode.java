@@ -15,7 +15,7 @@ import org.swerverobotics.library.interfaces.TeleOp;
  * to suit your needs, or create sibling OpModes adjacent to this one in the same
  * Java package.
  */
-@TeleOp(name="Tele Op")
+@TeleOp(name="RUN ME!!!")
 public class MainTeleOpMode extends SynchronousOpMode {
     /* Declare here any fields you might find useful. */
         // motor declarations
@@ -42,19 +42,16 @@ public class MainTeleOpMode extends SynchronousOpMode {
                 S_hitchR = null, // right hitch servo
                 S_hitchL = null; // left hitch servo
 
-        // sensor declarations
-        IBNO055IMU adaFruit = null;
-        IBNO055IMU.Parameters parameters = new IBNO055IMU.Parameters();
-
-
         // all of the important constants
-        final double STOP = 0.0d,
-                MAX_POWER = 1.0d;
+        final double    STOP = 0.0d,
+                        MAX_POWER = 1.0d;
         final int TICKS_PER_REVOLUTION = 1120;
 
         // all of the constant motor powers
         final double PICKUP_POWER = 0.8d,
                 LIFT_POWER = 1.0d;
+
+        private final float C_STICK_TOP_THRESHOLD = 0.85f;      // least value for which stick value read from motor will be 1.0f
 
         // all of the starting servo positions
         final double S_CLIMBERS_START_POS_R = Servo.MIN_POSITION,
@@ -108,10 +105,8 @@ public class MainTeleOpMode extends SynchronousOpMode {
 
         double angleTarget, currAngle;
 
-        // thread stuff
-        ControllerThread R_controllerThread;
-        Thread T_controllerThread;
 
+        private double convertStick(float controllerValue) {   return Range.clip(Math.sin(controllerValue * Math.PI / 2 / C_STICK_TOP_THRESHOLD), -1.0d, 1.0d); }
 
         @Override public void main ()throws InterruptedException {
         /* Initialize our hardware variables. Note that the strings used here as parameters
@@ -143,10 +138,6 @@ public class MainTeleOpMode extends SynchronousOpMode {
             //this.S_hitchR       = this.hardwareMap.servo.get("S_hitchR");
             //this.S_hitchL       = this.hardwareMap.servo.get("S_hitchL");
 
-            // defining threads
-            R_controllerThread = new ControllerThread();
-            T_controllerThread = new Thread(R_controllerThread, "Controller Tread");
-
             // fixing motor directions
             this.M_driveFR.setDirection(DcMotor.Direction.REVERSE);
             this.M_driveBR.setDirection(DcMotor.Direction.REVERSE);
@@ -156,11 +147,38 @@ public class MainTeleOpMode extends SynchronousOpMode {
 
             // Wait for the game to start
             waitForStart();
-            T_controllerThread.start();
+
             // Go go gadget robot!
             while (opModeIsActive()) {
                 if (updateGamepads()) {
+                    // motor control block
+                    M_drivePowerR = convertStick(-gamepad1.right_stick_y);
+                    M_drivePowerL = convertStick(-gamepad1.left_stick_y);
 
+                    // pickup control block
+                    if (gamepad1.right_bumper) {
+                        M_pickupPower = PICKUP_POWER;
+                    } else if (gamepad1.left_bumper) {
+                        M_pickupPower = -PICKUP_POWER;
+                    } else {
+                        M_pickupPower = STOP;
+                    }
+
+                    // lift control block
+                    if(gamepad1.right_trigger > 0.0f) {
+                        M_liftPower = LIFT_POWER;
+                    } else if(gamepad1.left_trigger > 0.0f) {
+                        M_liftPower = -LIFT_POWER;
+                    } else {
+                        M_liftPower = STOP;
+                    }
+
+                    // left climber block
+                    if(gamepad1.a) {
+                        S_climbersPosL = S_CLIMBERS_END_POS_L;
+                    } else if(gamepad1.b) {
+                        S_climbersPosL = S_CLIMBERS_START_POS_L;
+                    }
                 }
 
 
@@ -191,67 +209,7 @@ public class MainTeleOpMode extends SynchronousOpMode {
                 telemetry.update();
                 idle();
             }
-            T_controllerThread.interrupt();
         }
 
-        private class ControllerThread implements Runnable {
-            private final float C_STICK_TOP_THRESHOLD = 0.85f;      // least value for which stick value read from motor will be 1.0f
-            private double joystickAngle, joyStickMagnitude;
 
-            // converts all of the controller sticks into more sensitive values
-            // use a negative value for y axis since controller reads -1 when pushed forward
-            private double convertStick(float controllerValue) {   return Range.clip(Math.sin(controllerValue * Math.PI / 2 / C_STICK_TOP_THRESHOLD), -1.0d, 1.0d); }
-            // the main loop function
-            double passedTime = 0.0d;
-            ElapsedTime clock = new ElapsedTime();
-            public void run() {
-                try {
-                    while(!Thread.currentThread().isInterrupted()) {
-
-                        passedTime = clock.time() * 1000;
-                        clock.reset();
-
-
-                        // motor control block
-                        M_drivePowerR = convertStick(-gamepad1.right_stick_y);
-                        M_drivePowerL = convertStick(-gamepad1.left_stick_y);
-
-                        // pickup control block
-                        if (gamepad1.right_bumper) {
-                            M_pickupPower = PICKUP_POWER;
-                        } else if (gamepad1.left_bumper) {
-                            M_pickupPower = -PICKUP_POWER;
-                        } else {
-                            M_pickupPower = STOP;
-                        }
-
-                        // lift control block
-                        if(gamepad1.right_trigger > 0.0f) {
-                            M_liftPower = LIFT_POWER;
-                        } else if(gamepad1.left_trigger > 0.0f) {
-                            M_liftPower = -LIFT_POWER;
-                        } else {
-                            M_liftPower = STOP;
-                        }
-
-                        // left climber block
-                        if(gamepad1.a) {
-                            S_climbersPosL = S_CLIMBERS_END_POS_L;
-                        } else if(gamepad1.b) {
-                            S_climbersPosL = S_CLIMBERS_START_POS_L;
-                        }
-
-                        telemetry.addData("Thread is running", passedTime);
-                        telemetry.addData("R motor power", M_drivePowerR);
-                        telemetry.addData("L motor power", M_drivePowerL);
-                        telemetry.addData("R Motor Pos", M_driveFR.  getCurrentPosition());
-                        telemetry.addData("L Motor Pos", M_driveFL.getCurrentPosition());
-                        Thread.sleep(10);
-                    }
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    return;
-                }
-            }
-        }
 }

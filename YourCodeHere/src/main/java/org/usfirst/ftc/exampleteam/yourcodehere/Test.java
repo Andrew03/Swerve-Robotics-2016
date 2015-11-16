@@ -182,6 +182,8 @@ public class Test extends SynchronousOpMode {
         this.M_lift.setDirection(DcMotor.Direction.REVERSE);
         //this.M_hangL.setDirection(DcMotor.Direction.REVERSE);
 
+
+        /*
         // sets all motors to run with encoders
         //this.M_driveFR.setChannelMode(DcMotorController.RunMode.RUN_USING_ENCODERS);
         //this.M_driveFL.setChannelMode(DcMotorController.RunMode.RUN_USING_ENCODERS);
@@ -204,6 +206,7 @@ public class Test extends SynchronousOpMode {
 
         this.M_driveBR.setChannelMode(DcMotorController.RunMode.RUN_TO_POSITION);
         this.M_driveBL.setChannelMode(DcMotorController.RunMode.RUN_TO_POSITION);
+        */
 
         // Wait for the game to start
         waitForStart();
@@ -244,6 +247,7 @@ public class Test extends SynchronousOpMode {
                     M_drivePowerR = 0.0f;
                     M_drivePowerL = 0.0f;
                 }*/
+                /*
                 if(gamepad1.dpad_up) {
                     this.M_driveBR.setChannelMode(DcMotorController.RunMode.RESET_ENCODERS);
                     this.M_driveBL.setChannelMode(DcMotorController.RunMode.RESET_ENCODERS);
@@ -260,18 +264,20 @@ public class Test extends SynchronousOpMode {
                     this.M_driveBL.setTargetPosition(2400);
                     this.M_driveBR.setTargetPosition(2400);
                 }
+                */
             }
 
-            this.M_driveBL.setTargetPosition(2400);
-            this.M_driveBR.setTargetPosition(2400);
+            //this.M_driveBL.setTargetPosition(2400);
+            //this.M_driveBR.setTargetPosition(2400);
 
+            /*
             if(this.M_driveBL.getCurrentPosition() > this.M_driveBL.getTargetPosition()) {
                 this.M_drivePowerL = STOP;
             }
             if(this.M_driveBR.getCurrentPosition() > this.M_driveBR.getTargetPosition()) {
                 this.M_drivePowerR = STOP;
             }
-
+            */
             //this.M_driveBL.setPower(0.5f);
 
             // updates all the motor powers
@@ -308,7 +314,6 @@ public class Test extends SynchronousOpMode {
             telemetry.update();
             idle();
         }
-        //T_controllerThread.interrupt();
     }
 
     private class TurnPIDThread implements Runnable {
