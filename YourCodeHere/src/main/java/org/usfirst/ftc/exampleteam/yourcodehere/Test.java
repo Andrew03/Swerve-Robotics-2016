@@ -28,14 +28,11 @@ import org.swerverobotics.library.ClassFactory;
     }
  */
 
-/**
- * A skeletal example of a do-nothing first OpMode. Go ahead and change this code
- * to suit your needs, or create sibling OpModes adjacent to this one in the same
- * Java package.
- */
+// run to position vs run using encoders?
+
+
 @TeleOp(name="Test Op Mode")
 public class Test extends SynchronousOpMode {
-    /* Declare here any fields you might find useful. */
 
     // motor declarations
     DcMotor M_driveFR   = null, // front right drive motor
@@ -139,10 +136,6 @@ public class Test extends SynchronousOpMode {
     private double convertStick(float controllerValue) {   return Range.clip(Math.sin(controllerValue * Math.PI / 2 / C_STICK_TOP_THRESHOLD), -1.0d, 1.0d); }
 
     @Override public void main() throws InterruptedException {
-        /* Initialize our hardware variables. Note that the strings used here as parameters
-         * to 'get' must correspond to the names you assigned during the robot configuration
-         * step you did in the FTC Robot Controller app on the phone.
-         */
 
         // mapping motor variables to their hardware counterparts
         this.M_driveFR  = this.hardwareMap.dcMotor.get("M_driveFR");
@@ -186,17 +179,20 @@ public class Test extends SynchronousOpMode {
 
 
         // resets all the encoder values
-        //this.M_driveFR.setChannelMode(DcMotorController.RunMode.RESET_ENCODERS);
-        //this.M_driveFL.setChannelMode(DcMotorController.RunMode.RESET_ENCODERS);
-        this.M_driveBR.setChannelMode(DcMotorController.RunMode.RESET_ENCODERS);
-        this.M_driveBL.setChannelMode(DcMotorController.RunMode.RESET_ENCODERS);
-        //this.M_pickup.setChannelMode(DcMotorController.RunMode.RESET_ENCODERS);
-        //this.M_lift.setChannelMode(DcMotorController.RunMode.RESET_ENCODERS);
-        //this.M_hangR.setChannelMode(DcMotorController.RunMode.RESET_ENCODERS);
-        //this.M_hangL.setChannelMode(DcMotorController.RunMode.RESET_ENCODERS);
+        //this.M_driveFR.setMode(DcMotorController.RunMode.RESET_ENCODERS);
+        //this.M_driveFL.setMode(DcMotorController.RunMode.RESET_ENCODERS);
+        this.M_driveBR.setMode(DcMotorController.RunMode.RESET_ENCODERS);
+        this.M_driveBL.setMode(DcMotorController.RunMode.RESET_ENCODERS);
+        //this.M_pickup.setMode(DcMotorController.RunMode.RESET_ENCODERS);
+        //this.M_lift.setMode(DcMotorController.RunMode.RESET_ENCODERS);
+        //this.M_hangR.setMode(DcMotorController.RunMode.RESET_ENCODERS);
+        //this.M_hangL.setMode(DcMotorController.RunMode.RESET_ENCODERS);
 
-        this.M_driveBR.setChannelMode(DcMotorController.RunMode.RUN_TO_POSITION);
-        this.M_driveBL.setChannelMode(DcMotorController.RunMode.RUN_TO_POSITION);
+        //this.M_driveBR.setMode(DcMotorController.RunMode.RUN_TO_POSITION);
+        //this.M_driveBL.setMode(DcMotorController.RunMode.RUN_TO_POSITION);
+
+        this.M_driveBR.setMode(DcMotorController.RunMode.RUN_USING_ENCODERS);
+        this.M_driveBL.setMode(DcMotorController.RunMode.RUN_USING_ENCODERS);
 
 
         // Wait for the game to start
@@ -248,12 +244,12 @@ public class Test extends SynchronousOpMode {
                 */
                 /*
                 if(gamepad1.dpad_up) {
-                    this.M_driveBR.setChannelMode(DcMotorController.RunMode.RESET_ENCODERS);
-                    this.M_driveBL.setChannelMode(DcMotorController.RunMode.RESET_ENCODERS);
+                    this.M_driveBR.setMode(DcMotorController.RunMode.RESET_ENCODERS);
+                    this.M_driveBL.setMode(DcMotorController.RunMode.RESET_ENCODERS);
                 }
                 if(gamepad1.dpad_right) {
-                    this.M_driveBR.setChannelMode(DcMotorController.RunMode.RUN_TO_POSITION);
-                    this.M_driveBL.setChannelMode(DcMotorController.RunMode.RUN_TO_POSITION);
+                    this.M_driveBR.setMode(DcMotorController.RunMode.RUN_TO_POSITION);
+                    this.M_driveBL.setMode(DcMotorController.RunMode.RUN_TO_POSITION);
                 }
                 if(gamepad1.dpad_down) {
                     this.M_driveBL.setTargetPosition(-2400);
