@@ -16,7 +16,6 @@ public class MyFirstOpMode extends SynchronousOpMode
     // DcMotor motorLeft = null;
     // DcMotor motorRight = null;
 
-
     @Override public void main() throws InterruptedException
         {
         /* Initialize our hardware variables. Note that the strings used here as parameters

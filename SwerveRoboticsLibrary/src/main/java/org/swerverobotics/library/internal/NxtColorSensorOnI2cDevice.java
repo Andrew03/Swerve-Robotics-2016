@@ -11,7 +11,7 @@ import org.swerverobotics.library.interfaces.*;
  *
  * @see <a href="http://www.hitechnic.com/cgi-bin/commerce.cgi?preadd=action&key=NCO1038">NXT Color Sensor V2</a>
  */
-public class NxtColorSensorOnI2cDevice extends ColorSensor
+abstract class NxtColorSensorOnI2cDevice extends ColorSensor
     {
     //----------------------------------------------------------------------------------------------
     // State
