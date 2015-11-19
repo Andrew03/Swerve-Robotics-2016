@@ -188,16 +188,20 @@ public class Test extends SynchronousOpMode {
         //this.M_hangR.setMode(DcMotorController.RunMode.RESET_ENCODERS);
         //this.M_hangL.setMode(DcMotorController.RunMode.RESET_ENCODERS);
 
-        //this.M_driveBR.setMode(DcMotorController.RunMode.RUN_TO_POSITION);
-        //this.M_driveBL.setMode(DcMotorController.RunMode.RUN_TO_POSITION);
 
-        this.M_driveBR.setMode(DcMotorController.RunMode.RUN_USING_ENCODERS);
-        this.M_driveBL.setMode(DcMotorController.RunMode.RUN_USING_ENCODERS);
 
 
         // Wait for the game to start
         waitForStart();
-        //T_controllerThread.start();
+
+        //this.M_driveBL.setTargetPosition(2400);
+        //this.M_driveBR.setTargetPosition(2400);
+
+        //this.M_driveBR.setMode(DcMotorController.RunMode.RUN_TO_POSITION);
+        //this.M_driveBL.setMode(DcMotorController.RunMode.RUN_TO_POSITION);
+
+        //this.M_driveBR.setMode(DcMotorController.RunMode.RUN_USING_ENCODERS);
+        //this.M_driveBL.setMode(DcMotorController.RunMode.RUN_USING_ENCODERS);
         while (opModeIsActive()) {
             if (updateGamepads()) {
                 M_drivePowerR = convertStick(-gamepad1.right_stick_y);
@@ -234,14 +238,6 @@ public class Test extends SynchronousOpMode {
                 }
                 */
                 /*
-                if(gamepad1.x) {
-                    M_drivePowerR = 0.35f;
-                    M_drivePowerL = -0.35f;
-                } else {
-                    M_drivePowerR = 0.0f;
-                    M_drivePowerL = 0.0f;
-                }
-                */
                 if(gamepad1.y) {
                     S_climbersDepositPos = S_CLIMBERS_DEPOSIT_END_POS;
                 } else if(gamepad1.x) {
