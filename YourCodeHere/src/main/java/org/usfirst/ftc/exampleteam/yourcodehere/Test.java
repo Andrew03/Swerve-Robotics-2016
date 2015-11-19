@@ -75,7 +75,7 @@ public class Test extends SynchronousOpMode {
     // all of the starting/open servo positions
     final double    S_CLIMBERS_KNOCKDOWN_START_POS_R    = Servo.MIN_POSITION,
                     S_CLIMBERS_KNOCKDOWN_START_POS_L    = Servo.MIN_POSITION,
-                    S_CLIMBERS_DEPOSIT_START_POS        = Servo.MIN_POSITION,
+                    S_CLIMBERS_DEPOSIT_START_POS        = 0.90d,
                     S_LIFT_START_POS_R                  = Servo.MIN_POSITION,
                     S_LIFT_START_POS_L                  = Servo.MIN_POSITION,
                     S_BASKET_TILT_START_POS             = Servo.MIN_POSITION,
@@ -89,7 +89,7 @@ public class Test extends SynchronousOpMode {
     // all of the ending/close servo positions
     final double    S_CLIMBERS__KNOCKDOWN_END_POS_R     = Servo.MAX_POSITION,
                     S_CLIMBERS_KNOCKDOWN_END_POS_L      = Servo.MAX_POSITION,
-                    S_CLIMBERS_DEPOSIT_END_POS          = Servo.MAX_POSITION,
+                    S_CLIMBERS_DEPOSIT_END_POS          = Servo.MIN_POSITION,
                     S_LIFT_END_POS_R                    = Servo.MAX_POSITION,
                     S_LIFT_END_POS_L                    = Servo.MAX_POSITION,
                     S_BASKET_TILT_END_POS               = Servo.MAX_POSITION,
@@ -142,7 +142,7 @@ public class Test extends SynchronousOpMode {
         this.M_driveFL  = this.hardwareMap.dcMotor.get("M_driveFL");
         this.M_driveBR  = this.hardwareMap.dcMotor.get("M_driveBR");
         this.M_driveBL  = this.hardwareMap.dcMotor.get("M_driveBL");
-        //this.M_pickup   = this.hardwareMap.dcMotor.get("M_pickup");
+        this.M_pickup   = this.hardwareMap.dcMotor.get("M_pickup");
         this.M_lift     = this.hardwareMap.dcMotor.get("M_lift");
         //this.M_hangR    = this.hardwareMap.dcMotor.get("M_hangR");
         //this.M_hangL    = this.hardwareMap.dcMotor.get("M_hangL");
@@ -150,7 +150,7 @@ public class Test extends SynchronousOpMode {
         // mapping servo variables to their hardware counterparts
         //this.S_climbersKnockdownR   = this.hardwareMap.servo.get("S_climbersKnockdownR");
         //this.S_climbersKnockdownL   = this.hardwareMap.servo.get("S_climbersKnockdownL");
-        //this.S_climbersDeposit      = this.hardwareMap.servo.get("S_climbersDeposit");
+        this.S_climbersDeposit      = this.hardwareMap.servo.get("S_climbersDeposit");
         //this.S_liftR                = this.hardwareMap.servo.get("S_liftR");
         //this.S_liftL                = this.hardwareMap.servo.get("S_liftL");
         //this.S_basketTilt           = this.hardwareMap.servo.get("S_basketTilt");
@@ -172,7 +172,7 @@ public class Test extends SynchronousOpMode {
         // fixing motor directions
         this.M_driveFR.setDirection(DcMotor.Direction.REVERSE);
         this.M_driveBR.setDirection(DcMotor.Direction.REVERSE);
-        //this.M_pickup.setDirection(DcMotor.Direction.REVERSE);
+        this.M_pickup.setDirection(DcMotor.Direction.REVERSE);
         this.M_lift.setDirection(DcMotor.Direction.REVERSE);
         //this.M_hangL.setDirection(DcMotor.Direction.REVERSE);
 
@@ -203,7 +203,7 @@ public class Test extends SynchronousOpMode {
                 M_drivePowerR = convertStick(-gamepad1.right_stick_y);
                 M_drivePowerL = convertStick(-gamepad1.left_stick_y);
 
-                /*
+
                 // pickup control block
                 if (gamepad1.right_bumper) {
                     M_pickupPower = PICKUP_POWER;
@@ -212,9 +212,9 @@ public class Test extends SynchronousOpMode {
                 } else {
                     M_pickupPower = STOP;
                 }
-                */
+
                 // lift control block
-                /*
+
                 if(gamepad1.right_trigger > 0.0f) {
                     M_liftPower = LIFT_POWER;
                 } else if(gamepad1.left_trigger > 0.0f) {
@@ -222,7 +222,7 @@ public class Test extends SynchronousOpMode {
                 } else {
                     M_liftPower = STOP;
                 }
-                */
+
                 // climber control block
                 /*
                 if(gamepad1.a) {
@@ -242,6 +242,11 @@ public class Test extends SynchronousOpMode {
                     M_drivePowerL = 0.0f;
                 }
                 */
+                if(gamepad1.y) {
+                    S_climbersDepositPos = S_CLIMBERS_DEPOSIT_END_POS;
+                } else if(gamepad1.x) {
+                    S_climbersDepositPos = S_CLIMBERS_DEPOSIT_START_POS;
+                }
                 /*
                 if(gamepad1.dpad_up) {
                     this.M_driveBR.setMode(DcMotorController.RunMode.RESET_ENCODERS);
@@ -280,7 +285,7 @@ public class Test extends SynchronousOpMode {
             this.M_driveBL.setPower(this.M_drivePowerL);
             this.M_driveFR.setPower(this.M_drivePowerR);
             this.M_driveFL.setPower(this.M_drivePowerL);
-            //this.M_pickup.setPower(this.M_pickupPower);
+            this.M_pickup.setPower(this.M_pickupPower);
             this.M_lift.setPower(this.M_liftPower);
             //this.M_hangR.setPower(this.M_hangPowerR);
             //this.M_hangL.setPower(this.M_hangPowerL);
@@ -288,7 +293,7 @@ public class Test extends SynchronousOpMode {
             // updates all the servo positions
             //this.S_climbersKnockdownR.setPosition(this.S_climbersKnockdownPosR);
             //this.S_climbersKnockdownL.setPosition(this.S_climbersKnockdownPosL);
-            //this.S_climbersDeposit.setPosition(this.S_climbersDepositPos);
+            this.S_climbersDeposit.setPosition(this.S_climbersDepositPos);
             //this.S_liftR.setPosition(this.S_liftPosR);
             //this.S_liftL.setPosition(this.S_liftPosL);
             //this.S_basketTilt.setPosition(this.S_basketPosTiltPos);
