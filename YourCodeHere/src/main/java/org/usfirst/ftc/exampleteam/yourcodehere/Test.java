@@ -50,7 +50,7 @@ public class Test extends SynchronousOpMode {
             S_climbersDeposit       = null, // servo that deposits climbers
             S_liftR                 = null, // right servo that supports lift
             S_liftL                 = null, // left servo that supports lift
-            S_basketTilt            = null, // right servo on the basket
+            S_basketRotate          = null, // right servo on the basket
             S_basketRelease         = null, // left servo on the basket
             S_pickupFL              = null, // front left servo of the pickup
             S_pickupSR              = null, // servo on right side of the pickup
@@ -78,7 +78,7 @@ public class Test extends SynchronousOpMode {
                     S_CLIMBERS_DEPOSIT_START_POS        = 0.90d,
                     S_LIFT_START_POS_R                  = Servo.MIN_POSITION,
                     S_LIFT_START_POS_L                  = Servo.MIN_POSITION,
-                    S_BASKET_TILT_START_POS             = Servo.MIN_POSITION,
+                    S_BASKET_ROTATE_START_POS           = Servo.MIN_POSITION,
                     S_BASKET_RELEASE_START_POS          = Servo.MIN_POSITION,
                     S_PICKUP_START_POS_FL               = Servo.MIN_POSITION,
                     S_PICKUP_START_POS_SR               = Servo.MIN_POSITION,
@@ -92,7 +92,7 @@ public class Test extends SynchronousOpMode {
                     S_CLIMBERS_DEPOSIT_END_POS          = Servo.MIN_POSITION,
                     S_LIFT_END_POS_R                    = Servo.MAX_POSITION,
                     S_LIFT_END_POS_L                    = Servo.MAX_POSITION,
-                    S_BASKET_TILT_END_POS               = Servo.MAX_POSITION,
+                    S_BASKET_ROTATE_END_POS             = Servo.MAX_POSITION,
                     S_BASKET_RELEASE_END_POS            = Servo.MAX_POSITION,
                     S_PICKUP_END_POS_FR                 = Servo.MAX_POSITION,
                     S_PICKUP_END_POS_FL                 = Servo.MAX_POSITION,
@@ -115,7 +115,7 @@ public class Test extends SynchronousOpMode {
             S_climbersDepositPos     = S_CLIMBERS_DEPOSIT_START_POS,
             S_liftPosR               = S_LIFT_START_POS_R,
             S_liftPosL               = S_LIFT_START_POS_L,
-            S_basketPosTiltPos       = S_BASKET_TILT_START_POS,
+            S_basketPosTiltPos       = S_BASKET_ROTATE_START_POS,
             S_basketPosReleasePos    = S_BASKET_RELEASE_START_POS,
             S_pickupPosFL            = S_PICKUP_START_POS_FL,
             S_pickupPosSR            = S_PICKUP_START_POS_SR,
@@ -153,7 +153,7 @@ public class Test extends SynchronousOpMode {
         this.S_climbersDeposit      = this.hardwareMap.servo.get("S_climbersDeposit");
         //this.S_liftR                = this.hardwareMap.servo.get("S_liftR");
         //this.S_liftL                = this.hardwareMap.servo.get("S_liftL");
-        //this.S_basketTilt           = this.hardwareMap.servo.get("S_basketTilt");
+        //this.S_basketRotate         = this.hardwareMap.servo.get("S_basketRotate");
         //this.S_basketRelease        = this.hardwareMap.servo.get("S_basketRelease");
         //this.S_pickupFL             = this.hardwareMap.servo.get("S_pickupFL");
         //this.S_pickupSR             = this.hardwareMap.servo.get("S_pickupSR");
@@ -223,7 +223,7 @@ public class Test extends SynchronousOpMode {
                     M_liftPower = STOP;
                 }
 
-                // climber control block
+                // climber knockdown control block
                 /*
                 if(gamepad1.a) {
                     S_climbersKnockdownPosL = S_CLIMBERS_KNOCKDOWN_END_POS_L;
@@ -242,10 +242,18 @@ public class Test extends SynchronousOpMode {
                     M_drivePowerL = 0.0f;
                 }
                 */
+                // climber deposit control block
                 if(gamepad1.y) {
                     S_climbersDepositPos = S_CLIMBERS_DEPOSIT_END_POS;
                 } else if(gamepad1.x) {
                     S_climbersDepositPos = S_CLIMBERS_DEPOSIT_START_POS;
+                }
+                if(gamepad1.a) {
+                    M_drivePowerL = 0.3f;
+                    M_drivePowerR = -0.3f;
+                } else {
+                    M_drivePowerL = STOP;
+                    M_drivePowerR = STOP;
                 }
                 /*
                 if(gamepad1.dpad_up) {
@@ -279,6 +287,21 @@ public class Test extends SynchronousOpMode {
             }
             */
             //this.M_driveBL.setPower(0.5f);
+
+            if(this.M_driveBL.getCurrentPosition() - 908 < -100) {
+                this.M_drivePowerL = 0.3d;
+            } else if(this.M_driveBL.getCurrentPosition() - 908 > -100 && this.M_driveBL.getCurrentPosition() < 0) {
+                this.M_drivePowerL = (this.M_driveBL.getCurrentPosition() - 908)/100.0d;
+            } else if(this.M_driveBL.getCurrentPosition() >= 0) {
+                this.M_drivePowerL = STOP;
+            }
+            if(this.M_driveBR.getCurrentPosition() + 908 > 100) {
+                this.M_drivePowerR = -0.3d;
+            } else if(this.M_driveBR.getCurrentPosition() + 908 < 100 && this.M_driveBR.getCurrentPosition() > 0) {
+                this.M_drivePowerR = -(this.M_driveBR.getCurrentPosition() - 9080)/100.0d;
+            } else if(this.M_driveBR.getCurrentPosition() <= 0) {
+                this.M_drivePowerR = STOP;
+            }
 
             // updates all the motor powers
             this.M_driveBR.setPower(this.M_drivePowerR);
