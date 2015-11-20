@@ -79,7 +79,7 @@ public class Test extends SynchronousOpMode {
                     S_LIFT_START_POS_R                  = Servo.MIN_POSITION,
                     S_LIFT_START_POS_L                  = Servo.MIN_POSITION,
                     S_BASKET_ROTATE_START_POS           = Servo.MIN_POSITION,
-                    S_BASKET_RELEASE_START_POS          = Servo.MIN_POSITION,
+                    S_BASKET_RELEASE_START_POS          = 0.34d,
                     S_PICKUP_START_POS_FL               = Servo.MIN_POSITION,
                     S_PICKUP_START_POS_SR               = Servo.MIN_POSITION,
                     S_PICKUP_START_POS_SL               = Servo.MIN_POSITION,
@@ -93,7 +93,7 @@ public class Test extends SynchronousOpMode {
                     S_LIFT_END_POS_R                    = Servo.MAX_POSITION,
                     S_LIFT_END_POS_L                    = Servo.MAX_POSITION,
                     S_BASKET_ROTATE_END_POS             = Servo.MAX_POSITION,
-                    S_BASKET_RELEASE_END_POS            = Servo.MAX_POSITION,
+                    S_BASKET_RELEASE_END_POS            = Servo.MIN_POSITION,
                     S_PICKUP_END_POS_FR                 = Servo.MAX_POSITION,
                     S_PICKUP_END_POS_FL                 = Servo.MAX_POSITION,
                     S_PICKUP_END_POS_SR                 = Servo.MAX_POSITION,
@@ -115,8 +115,8 @@ public class Test extends SynchronousOpMode {
             S_climbersDepositPos     = S_CLIMBERS_DEPOSIT_START_POS,
             S_liftPosR               = S_LIFT_START_POS_R,
             S_liftPosL               = S_LIFT_START_POS_L,
-            S_basketPosTiltPos       = S_BASKET_ROTATE_START_POS,
-            S_basketPosReleasePos    = S_BASKET_RELEASE_START_POS,
+            S_basketRotatePos        = S_BASKET_ROTATE_START_POS,
+            S_basketReleasePos       = S_BASKET_RELEASE_START_POS,
             S_pickupPosFL            = S_PICKUP_START_POS_FL,
             S_pickupPosSR            = S_PICKUP_START_POS_SR,
             S_pickupPosSL            = S_PICKUP_START_POS_SL,
@@ -153,8 +153,8 @@ public class Test extends SynchronousOpMode {
         this.S_climbersDeposit      = this.hardwareMap.servo.get("S_climbersDeposit");
         //this.S_liftR                = this.hardwareMap.servo.get("S_liftR");
         //this.S_liftL                = this.hardwareMap.servo.get("S_liftL");
-        //this.S_basketRotate         = this.hardwareMap.servo.get("S_basketRotate");
-        //this.S_basketRelease        = this.hardwareMap.servo.get("S_basketRelease");
+        this.S_basketRotate         = this.hardwareMap.servo.get("S_basketRotate");
+        this.S_basketRelease        = this.hardwareMap.servo.get("S_basketRelease");
         //this.S_pickupFL             = this.hardwareMap.servo.get("S_pickupFL");
         //this.S_pickupSR             = this.hardwareMap.servo.get("S_pickupSR");
         //this.S_pickupSL             = this.hardwareMap.servo.get("S_pickupSL");
@@ -179,8 +179,8 @@ public class Test extends SynchronousOpMode {
 
 
         // resets all the encoder values
-        //this.M_driveFR.setMode(DcMotorController.RunMode.RESET_ENCODERS);
-        //this.M_driveFL.setMode(DcMotorController.RunMode.RESET_ENCODERS);
+        this.M_driveFR.setMode(DcMotorController.RunMode.RESET_ENCODERS);
+        this.M_driveFL.setMode(DcMotorController.RunMode.RESET_ENCODERS);
         this.M_driveBR.setMode(DcMotorController.RunMode.RESET_ENCODERS);
         this.M_driveBL.setMode(DcMotorController.RunMode.RESET_ENCODERS);
         //this.M_pickup.setMode(DcMotorController.RunMode.RESET_ENCODERS);
@@ -194,14 +194,6 @@ public class Test extends SynchronousOpMode {
         // Wait for the game to start
         waitForStart();
 
-        //this.M_driveBL.setTargetPosition(2400);
-        //this.M_driveBR.setTargetPosition(2400);
-
-        //this.M_driveBR.setMode(DcMotorController.RunMode.RUN_TO_POSITION);
-        //this.M_driveBL.setMode(DcMotorController.RunMode.RUN_TO_POSITION);
-
-        //this.M_driveBR.setMode(DcMotorController.RunMode.RUN_USING_ENCODERS);
-        //this.M_driveBL.setMode(DcMotorController.RunMode.RUN_USING_ENCODERS);
         while (opModeIsActive()) {
             if (updateGamepads()) {
                 M_drivePowerR = convertStick(-gamepad1.right_stick_y);
@@ -218,13 +210,22 @@ public class Test extends SynchronousOpMode {
                 }
 
                 // lift control block
-
                 if(gamepad1.right_trigger > 0.0f) {
                     M_liftPower = LIFT_POWER;
                 } else if(gamepad1.left_trigger > 0.0f) {
                     M_liftPower = -LIFT_POWER;
                 } else {
                     M_liftPower = STOP;
+                }
+                if(gamepad1.x) {
+                    S_basketReleasePos = S_BASKET_RELEASE_END_POS;
+                } else if(gamepad1.y) {
+                    S_basketReleasePos = S_BASKET_RELEASE_START_POS;
+                }
+                if(gamepad1.a) {
+                    S_basketRotatePos += 0.01d;
+                } else if(gamepad1.b) {
+                    S_basketRotatePos -= 0.01d;
                 }
 
                 // climber knockdown control block
@@ -237,52 +238,18 @@ public class Test extends SynchronousOpMode {
                     S_climbersKnockdownPosR = S_CLIMBERS_KNOCKDOWN_START_POS_R;
                 }
                 */
-
+                /*
                 if(gamepad1.y) {
                     S_climbersDepositPos = S_CLIMBERS_DEPOSIT_END_POS;
                 } else if(gamepad1.x) {
                     S_climbersDepositPos = S_CLIMBERS_DEPOSIT_START_POS;
                 }
-                if(gamepad1.a) {
-                    M_drivePowerL = 0.3f;
-                    M_drivePowerR = -0.3f;
-                } else {
-                    M_drivePowerL = STOP;
-                    M_drivePowerR = STOP;
-                }
-                /*
-                if(gamepad1.dpad_up) {
-                    this.M_driveBR.setMode(DcMotorController.RunMode.RESET_ENCODERS);
-                    this.M_driveBL.setMode(DcMotorController.RunMode.RESET_ENCODERS);
-                }
-                if(gamepad1.dpad_right) {
-                    this.M_driveBR.setMode(DcMotorController.RunMode.RUN_TO_POSITION);
-                    this.M_driveBL.setMode(DcMotorController.RunMode.RUN_TO_POSITION);
-                }
-                if(gamepad1.dpad_down) {
-                    this.M_driveBL.setTargetPosition(-2400);
-                    this.M_driveBR.setTargetPosition(-2400);
-                }
-                if(gamepad1.dpad_left) {
-                    this.M_driveBL.setTargetPosition(2400);
-                    this.M_driveBR.setTargetPosition(2400);
-                }
                 */
-            }
 
-            //this.M_driveBL.setTargetPosition(2400);
-            //this.M_driveBR.setTargetPosition(2400);
+
+            }
 
             /*
-            if(this.M_driveBL.getCurrentPosition() > this.M_driveBL.getTargetPosition()) {
-                this.M_drivePowerL = STOP;
-            }
-            if(this.M_driveBR.getCurrentPosition() > this.M_driveBR.getTargetPosition()) {
-                this.M_drivePowerR = STOP;
-            }
-            */
-            //this.M_driveBL.setPower(0.5f);
-
             if(this.M_driveBL.getCurrentPosition() - 908 < -100) {
                 this.M_drivePowerL = 0.3d;
             } else if(this.M_driveBL.getCurrentPosition() - 908 > -100 && this.M_driveBL.getCurrentPosition() < 0) {
@@ -296,7 +263,7 @@ public class Test extends SynchronousOpMode {
                 this.M_drivePowerR = -(this.M_driveBR.getCurrentPosition() - 9080)/100.0d;
             } else if(this.M_driveBR.getCurrentPosition() <= 0) {
                 this.M_drivePowerR = STOP;
-            }
+            } */
 
             // updates all the motor powers
             this.M_driveBR.setPower(this.M_drivePowerR);
@@ -314,8 +281,8 @@ public class Test extends SynchronousOpMode {
             this.S_climbersDeposit.setPosition(this.S_climbersDepositPos);
             //this.S_liftR.setPosition(this.S_liftPosR);
             //this.S_liftL.setPosition(this.S_liftPosL);
-            //this.S_basketTilt.setPosition(this.S_basketPosTiltPos);
-            //this.S_basketRelease.setPosition(this.S_basketPosReleasePos);
+            this.S_basketRotate.setPosition(this.S_basketRotatePos);
+            this.S_basketRelease.setPosition(this.S_basketReleasePos);
             //this.S_pickupFL.setPosition(this.S_pickupPosFL);
             //this.S_pickupSR.setPosition(this.S_pickupPosSR);
             //this.S_pickupSL.setPosition(this.S_pickupPosSL);
@@ -324,10 +291,12 @@ public class Test extends SynchronousOpMode {
 
             //int currPos = M_driveBL.getCurrentPosition();
 
-            telemetry.addData("R Motor Pos", M_driveBR.getCurrentPosition());
-            telemetry.addData("L Motor Pos", M_driveBL.getCurrentPosition());
-            telemetry.addData("R Motor Power", M_drivePowerR);
-            telemetry.addData("L Motor Power", M_drivePowerL);
+            telemetry.addData("RF Motor Pos", M_driveFR.getCurrentPosition());
+            telemetry.addData("RB Motor Pos", M_driveBR.getCurrentPosition());
+            telemetry.addData("LF Motor Pos", M_driveFL.getCurrentPosition());
+            telemetry.addData("LF Motor Pos", M_driveBL.getCurrentPosition());
+            telemetry.addData("Rotate Servo Pos", S_basketRotatePos);
+            telemetry.addData("Release Servo Pos", S_basketReleasePos);
 
             telemetry.update();
             idle();
