@@ -6,17 +6,16 @@ import com.qualcomm.robotcore.hardware.DcMotor;
  * Created by hoangam on 11/19/2015.
  */
 public class DrivePIDThread extends PIDThread {
-
-    DrivePIDThread(double kP, double kI, double kD, DcMotor[] motors) {
-        double[] kPs = new double[motors.length];
-        double[] kIs = new double[motors.length];
-        double[] kDs = new double[motors.length];
-        super(kPs, kIs, kDs, motors);
+    final private double INCHES_TO_TICKS = 1.0d;
+    public DrivePIDThread(double kP, double kI, double kD, DcMotor driveFR, DcMotor driveFL, DcMotor driveBR, DcMotor driveBL) {
+        super(kP, kI, kD, driveFR, driveFL, driveBR, driveBL);
     }
     //////// need to do!!!!!!!!!!!!!!!!! ///////////////////
     // convert ticks to inches
+    // find average of 5 trials, ticks per 18 inches by driving
+    // target is entered in inches
     public void setTarget(double target) {
-        this.target = target;
+        this.target = target * INCHES_TO_TICKS;
         for(int i = 0; i < motorTargets.length; i++) {
             motorTargets[i] = (int)(motors[i].getCurrentPosition() + target);
         }

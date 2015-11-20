@@ -13,6 +13,9 @@ import org.swerverobotics.library.interfaces.IBNO055IMU;
 import org.swerverobotics.library.interfaces.TeleOp;
 import org.swerverobotics.library.internal.AdaFruitBNO055IMU;
 import org.swerverobotics.library.ClassFactory;
+import org.usfirst.ftc.exampleteam.yourcodehere.AndrewLib.DrivePIDThread;
+import org.usfirst.ftc.exampleteam.yourcodehere.AndrewLib.LiftPIDThread;
+import org.usfirst.ftc.exampleteam.yourcodehere.AndrewLib.TurnPIDThread;
 
 // distance is an arc length, r * angle, where r = diagonal of robot / 2 and angle is angle to turn
 // distance also equals ticks * wheel radius / ticks per revolution
@@ -28,7 +31,8 @@ import org.swerverobotics.library.ClassFactory;
     }
  */
 
-// run to position vs run using encoders?
+// Basket Rotate Servo isn't getting any power
+// Try lift out at 5380, lift down at -450, lift settled at 20
 
 
 @TeleOp(name="Test Op Mode")
@@ -93,7 +97,7 @@ public class Test extends SynchronousOpMode {
                     S_LIFT_END_POS_R                    = Servo.MAX_POSITION,
                     S_LIFT_END_POS_L                    = Servo.MAX_POSITION,
                     S_BASKET_ROTATE_END_POS             = Servo.MAX_POSITION,
-                    S_BASKET_RELEASE_END_POS            = Servo.MIN_POSITION,
+                    S_BASKET_RELEASE_END_POS            = Servo.MAX_POSITION,
                     S_PICKUP_END_POS_FR                 = Servo.MAX_POSITION,
                     S_PICKUP_END_POS_FL                 = Servo.MAX_POSITION,
                     S_PICKUP_END_POS_SR                 = Servo.MAX_POSITION,
@@ -122,6 +126,22 @@ public class Test extends SynchronousOpMode {
             S_pickupPosSL            = S_PICKUP_START_POS_SL,
             S_hitchPosR              = S_HITCH_START_POS_R,
             S_hitchPosL              = S_HITCH_START_POS_L;
+
+    // PID Threads
+    LiftPIDThread liftPIDThread;
+    DrivePIDThread drivePIDThread;
+    TurnPIDThread turnPIDThread;
+
+    // PID Threads Constants
+    final double    liftKP  = 0.0d,
+                    liftKI  = 0.0d,
+                    liftKD  = 0.0d;
+    final double    driveKP = 0.0d,
+                    driveKD = 0.0d,
+                    driveKI = 0.0d;
+    final double    turnKP  = 0.0d,
+                    turnKI  = 0.0d,
+                    turnKD  = 0.0d;
 
     double angleTarget, currAngle;
 
@@ -161,6 +181,11 @@ public class Test extends SynchronousOpMode {
         //this.S_hitchR               = this.hardwareMap.servo.get("S_hitchR");
         //this.S_hitchL               = this.hardwareMap.servo.get("S_hitchL");
 
+        // defining PID Threads
+        liftPIDThread = new LiftPIDThread(liftKP, liftKI, liftKD, this.M_lift);
+        drivePIDThread = new DrivePIDThread(driveKP, driveKI, driveKD, this.M_driveFR, this.M_driveFL, this.M_driveBR, this.M_driveBL);
+        turnPIDThread = new TurnPIDThread(turnKP, turnKI, turnKD, this.M_driveFR, this.M_driveFL, this.M_driveBR, this.M_driveBL);
+
 
 
         // mapping sensor variables to their hardware counterparts
@@ -183,17 +208,24 @@ public class Test extends SynchronousOpMode {
         this.M_driveFL.setMode(DcMotorController.RunMode.RESET_ENCODERS);
         this.M_driveBR.setMode(DcMotorController.RunMode.RESET_ENCODERS);
         this.M_driveBL.setMode(DcMotorController.RunMode.RESET_ENCODERS);
-        //this.M_pickup.setMode(DcMotorController.RunMode.RESET_ENCODERS);
-        //this.M_lift.setMode(DcMotorController.RunMode.RESET_ENCODERS);
+        this.M_lift.setMode(DcMotorController.RunMode.RESET_ENCODERS);
         //this.M_hangR.setMode(DcMotorController.RunMode.RESET_ENCODERS);
         //this.M_hangL.setMode(DcMotorController.RunMode.RESET_ENCODERS);
 
-
+        this.M_driveFR.setMode(DcMotorController.RunMode.RUN_USING_ENCODERS);
+        this.M_driveFL.setMode(DcMotorController.RunMode.RUN_USING_ENCODERS);
+        this.M_driveBR.setMode(DcMotorController.RunMode.RUN_USING_ENCODERS);
+        this.M_driveBL.setMode(DcMotorController.RunMode.RUN_USING_ENCODERS);
+        this.M_lift.setMode(DcMotorController.RunMode.RUN_USING_ENCODERS);
 
 
         // Wait for the game to start
         waitForStart();
-
+        // starting PID Threads
+        //liftPIDThread.start();
+        //drivePIDThread.start();
+        turnPIDThread.start();
+        //turnPIDThread.setTarget(908.0d);
         while (opModeIsActive()) {
             if (updateGamepads()) {
                 M_drivePowerR = convertStick(-gamepad1.right_stick_y);
@@ -217,16 +249,19 @@ public class Test extends SynchronousOpMode {
                 } else {
                     M_liftPower = STOP;
                 }
+
+                // basket control block
                 if(gamepad1.x) {
                     S_basketReleasePos = S_BASKET_RELEASE_END_POS;
                 } else if(gamepad1.y) {
                     S_basketReleasePos = S_BASKET_RELEASE_START_POS;
                 }
+                /*
                 if(gamepad1.a) {
                     S_basketRotatePos += 0.01d;
                 } else if(gamepad1.b) {
                     S_basketRotatePos -= 0.01d;
-                }
+                }*/
 
                 // climber knockdown control block
                 /*
@@ -295,55 +330,34 @@ public class Test extends SynchronousOpMode {
             telemetry.addData("RB Motor Pos", M_driveBR.getCurrentPosition());
             telemetry.addData("LF Motor Pos", M_driveFL.getCurrentPosition());
             telemetry.addData("LF Motor Pos", M_driveBL.getCurrentPosition());
-            telemetry.addData("Rotate Servo Pos", S_basketRotatePos);
-            telemetry.addData("Release Servo Pos", S_basketReleasePos);
+            telemetry.addData("Lift Motor Pos", M_lift.getCurrentPosition());
 
             telemetry.update();
             idle();
         }
-    }
+        turnPIDThread.interrupt();
 
-    private class TurnPIDThread implements Runnable {
-        final double angleThreshold = 0.5d;
-        float   kP = 0.0f,
-                kI = 0.0f;
-        float   maxPower = 1.0f,
-                minPower = -1.0f,
-                minPIDPower = 0.2f;
-        boolean isMoving = false;
-        double  currError = 0.0d,   // in degrees
-                accumError = 0.0d;  // in degrees
-        float   PIDValue = 0.0f,
-                power = 0.0f;
-        double prevTarget = 0.0d;
+        this.M_driveBR.setPower(STOP);
+        this.M_driveBL.setPower(STOP);
+        this.M_driveFR.setPower(STOP);
+        this.M_driveFL.setPower(STOP);
+        this.M_pickup.setPower(STOP);
+        this.M_lift.setPower(STOP);
+        //this.M_hangR.setPower(STOP);
+        //this.M_hangL.setPower(STOP);
 
-        @Override
-        public void run() {
-            try {
-                while (!Thread.currentThread().isInterrupted()) {
-                    if (Math.abs(prevTarget - angleTarget) > angleThreshold) {
-                        prevTarget = angleTarget;
-                        accumError = 0.0d;
-                    }
-////////////////////////////// find a way to convert degrees to 0-180 from y axis
-                    if (Math.abs(angleTarget - currAngle) > angleThreshold) {
-                        currError = (Math.abs(angleTarget - currAngle) > Math.abs(currAngle - angleTarget)) ? angleTarget - currAngle : currAngle - angleTarget;
-                        accumError += currError;
-                        PIDValue = (float) (kP * currError + kI * accumError);
-                        PIDValue = Range.clip(PIDValue, -maxPower, maxPower);
-                        //driveRPower = PIDValue;
-                        if (Math.abs(currError) < angleThreshold) {
-                            power = 0.0f;
-                            isMoving = false;
-                        }
-                        Thread.sleep(10);
-                    }
-                }
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                return;
-            }
-        }
+        //this.S_climbersKnockdownR.setPosition(S_CLIMBERS_KNOCKDOWN_START_POS_R);
+        //this.S_climbersKnockdownL.setPosition(S_CLIMBERS_KNOCKDOWN_START_POS_L);
+        this.S_climbersDeposit.setPosition(S_CLIMBERS_DEPOSIT_START_POS);
+        //this.S_liftR.setPosition(S_LIFT_START_POS_R);
+        //this.S_liftL.setPosition(S_LIFT_START_POS_L);
+        this.S_basketRotate.setPosition(S_BASKET_ROTATE_START_POS);
+        this.S_basketRelease.setPosition(S_BASKET_RELEASE_START_POS);
+        //this.S_pickupFL.setPosition(this.S_pickupPosFL);
+        //this.S_pickupSR.setPosition(this.S_pickupPosSR);
+        //this.S_pickupSL.setPosition(this.S_pickupPosSL);
+        //this.S_hitchR.setPosition(this.S_hitchPosR);
+        //this.S_hitchL.setPosition(this.S_hitchPosL);
     }
 }
 

@@ -12,11 +12,11 @@ public class PIDThread extends Thread implements PIDInterface{
     protected double    target   = 0.0d;
     protected double    maxPower = 1.0d,
                         minPower = -1.0d;
-    protected double    threshold;
+    protected int       threshold = 10;
     DcMotor motors[];
     int motorTargets[];
 
-    PIDThread(double kP, double kI, double kD, DcMotor[] motors) {
+    PIDThread(double kP, double kI, double kD, DcMotor ... motors) {
         this.kP = new double[motors.length];
         this.kI = new double[motors.length];
         this.kD = new double[motors.length];
@@ -61,15 +61,17 @@ public class PIDThread extends Thread implements PIDInterface{
     @Override
     public void run() {
         try {
-            while(!didReachTarget()) {
-                for(int i = 0; i < motors.length; i++) {
-                    int error = motors[i].getTargetPosition() - motors[i].getCurrentPosition();
-                    accumError[i] += error;
-                    PIDValue[i] = kP[i] * error + kI[i] * accumError[i];
-                    if(Math.abs(PIDValue[i]) > threshold) {
-                        motors[i].setPower(Range.clip(PIDValue[i], -1.0d, 1.0d));
-                    } else {
-                        motors[i].setPower(0.0d);
+            while(!Thread.currentThread().isInterrupted()) {
+                if(!didReachTarget()) {
+                    for (int i = 0; i < motors.length; i++) {
+                        int error = motors[i].getTargetPosition() - motors[i].getCurrentPosition();
+                        accumError[i] += error;
+                        PIDValue[i] = kP[i] * error + kI[i] * accumError[i];
+                        if (Math.abs(PIDValue[i]) > threshold) {
+                            motors[i].setPower(Range.clip(PIDValue[i], -1.0d, 1.0d));
+                        } else {
+                            motors[i].setPower(0.0d);
+                        }
                     }
                 }
                 sleep(10);
